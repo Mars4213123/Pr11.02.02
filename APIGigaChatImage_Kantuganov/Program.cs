@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using APIGigaChatImage_Kantuganov.Models.Response;
 using Newtonsoft.Json;
 
@@ -18,17 +19,56 @@ namespace APIGigaChatImage_Kantuganov
         {
             string Token = await GetToken(ClientId, AuthorizationKey);
 
-            // Пример использования
-            string prompt = "Красивый закат над горами";
+            string prompt = Console.ReadLine();
             string imageUrl = await GenerateImage(Token, prompt);
 
             if (imageUrl != null)
             {
                 Console.WriteLine($"Изображение успешно сгенерировано: {imageUrl}");
+
+                string imageId = ExtractImageIdFromUrl(imageUrl);
+
+                if (!string.IsNullOrEmpty(imageId))
+                {
+                    string filePath = await DownloadImage(Token, imageId, "generated_image.jpg");
+
+                    if (filePath != null)
+                    {
+                        Console.WriteLine($"Изображение сохранено: {filePath}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Ошибка при скачивании изображения");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Не удалось извлечь идентификатор изображения из URL");
+                }
             }
             else
             {
                 Console.WriteLine("Ошибка при генерации изображения");
+            }
+        }
+
+        private static string ExtractImageIdFromUrl(string imageUrl)
+        {
+            try
+            {
+                Uri uri = new Uri(imageUrl);
+                string lastSegment = uri.Segments.Last();
+
+                if (lastSegment.Contains('.'))
+                {
+                    lastSegment = lastSegment.Substring(0, lastSegment.LastIndexOf('.'));
+                }
+
+                return lastSegment;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -118,6 +158,57 @@ namespace APIGigaChatImage_Kantuganov
             }
 
             return imageUrl;
+        }
+
+        public static async Task<string> DownloadImage(string token, string imageId, string fileName = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    fileName = $"{imageId}.jpg";
+                }
+
+                string downloadPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+
+                string uri = $"https://gigachat.devices.sberbank.ru/api/v1/images/{imageId}";
+
+                using (HttpClientHandler handler = new HttpClientHandler())
+                {
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                        Console.WriteLine($"Скачиваю изображение {imageId}...");
+
+                        using (HttpResponseMessage response = await client.GetAsync(uri))
+                        {
+                            if (response.IsSuccessStatusCode)
+                            {
+                                using (FileStream fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                                {
+                                    await response.Content.CopyToAsync(fileStream);
+                                }
+
+                                Console.WriteLine($"Изображение сохранено в: {downloadPath}");
+                                return downloadPath;
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Ошибка при скачивании: {response.StatusCode}");
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Исключение при скачивании изображения: {ex.Message}");
+                return null;
+            }
         }
     }
 }
