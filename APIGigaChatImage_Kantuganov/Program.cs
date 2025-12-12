@@ -1,177 +1,102 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using APIGigaChatImage_Kantuganov.Models.Response;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 namespace APIGigaChatImage_Kantuganov
 {
     public class Program
     {
-        static string ClientId = "***";
-        static string AuthorizationKey = "***";
+        static string ClientId = "7879c628-132f-4ec9-b371-309d6472aa56";
+        static string AuthorizationKey = "Nzg3OWM2MjgtMTMyZi00ZWM5LWIzNzEtMzA5ZDY0NzJhYTU2OmI2ZmM2MDdjLWY2MGEtNDhmYi04MDQ2LTY3Y2U0NzNlMDA1NA==";
 
         static async Task Main(string[] args)
         {
-            string Token = await GetToken(ClientId, AuthorizationKey);
 
-            string prompt = Console.ReadLine();
-            string imageUrl = await GenerateImage(Token, prompt);
+            Console.Write("Введите описание для изображения: ");
+            string userPrompt = Console.ReadLine();
 
-            if (imageUrl != null)
+            if (string.IsNullOrWhiteSpace(userPrompt))
             {
-                Console.WriteLine($"Изображение успешно сгенерировано: {imageUrl}");
+                userPrompt = "Красивый пейзаж с горами и озером при закате";
+            }
 
-                string imageId = ExtractImageIdFromUrl(imageUrl);
+            string accessToken = await GetToken(ClientId, AuthorizationKey);
 
-                if (!string.IsNullOrEmpty(imageId))
-                {
-                    string filePath = await DownloadImage(Token, imageId, "generated_image.jpg");
+            if (accessToken == null)
+            {
+                Console.WriteLine("Не удалось получить токен. Использую стандартные обои.");
+                UseDefaultWallpaper();
+                WaitForExit();
+                return;
+            }
 
-                    if (filePath != null)
-                    {
-                        Console.WriteLine($"Изображение сохранено: {filePath}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Ошибка при скачивании изображения");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Не удалось извлечь идентификатор изображения из URL");
-                }
+            string imageFileId = await GenerateImage(accessToken, userPrompt);
+
+            if (imageFileId == null)
+            {
+                Console.WriteLine("Не удалось сгенерировать изображение. Использую стандартные обои.");
+                UseDefaultWallpaper();
+                WaitForExit();
+                return;
+            }
+
+            string downloadedImagePath = await DownloadImage(accessToken, imageFileId);
+
+            if (downloadedImagePath == null || !File.Exists(downloadedImagePath))
+            {
+                Console.WriteLine("Не удалось скачать изображение. Использую стандартные обои.");
+                UseDefaultWallpaper();
+                WaitForExit();
+                return;
+            }
+
+            bool wallpaperSet = Wallpapersetter.SetWallpaper(downloadedImagePath);
+
+            if (wallpaperSet)
+            {
+                Console.WriteLine("Обои успешно установлены!");
             }
             else
             {
-                Console.WriteLine("Ошибка при генерации изображения");
+                Console.WriteLine("Не удалось установить обои. Использую стандартные обои.");
+                UseDefaultWallpaper();
             }
+
+            WaitForExit();
         }
 
-        private static string ExtractImageIdFromUrl(string imageUrl)
+        private static void WaitForExit()
+        {
+            Console.WriteLine("\nНажмите любую клавишу для выхода...");
+            Console.ReadKey();
+        }
+
+        private static void UseDefaultWallpaper()
         {
             try
             {
-                Uri uri = new Uri(imageUrl);
-                string lastSegment = uri.Segments.Last();
+                string defaultWallpaper = @"C:\Users\student-A502.PERMAVIAT\Pictures\Снимок.png";
 
-                if (lastSegment.Contains('.'))
+                if (File.Exists(defaultWallpaper))
                 {
-                    lastSegment = lastSegment.Substring(0, lastSegment.LastIndexOf('.'));
+                    Wallpapersetter.SetWallpaper(defaultWallpaper);
                 }
-
-                return lastSegment;
             }
-            catch
-            {
-                return null;
-            }
+            catch { }
         }
 
         public static async Task<string> GetToken(string rpUID, string bearer)
         {
-            string ReturnToken = null;
-            string Uri = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
-
-            using (HttpClientHandler Handler = new HttpClientHandler())
-            {
-                Handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
-
-                using (HttpClient Client = new HttpClient(Handler))
-                {
-                    HttpRequestMessage Request = new HttpRequestMessage(HttpMethod.Post, Uri);
-
-                    Request.Headers.Add("Accept", "application/json");
-                    Request.Headers.Add("Authorization", $"bearer {bearer}");
-
-                    var Data = new List<KeyValuePair<string, string>>
-                    {
-                        new KeyValuePair<string, string>("scope", "GIGANET_API_PERS")
-                    };
-
-                    Request.Content = new FormUrlEncodedContent(Data);
-
-                    HttpResponseMessage Response = await Client.SendAsync(Request);
-
-                    if (Response.IsSuccessStatusCode)
-                    {
-                        string ResponseContent = await Response.Content.ReadAsStringAsync();
-                        ResponseToken Token = JsonConvert.DeserializeObject<ResponseToken>(ResponseContent);
-                        ReturnToken = Token.access_token;
-                    }
-                }
-            }
-
-            return ReturnToken;
-        }
-
-        public static async Task<string> GenerateImage(string token, string prompt)
-        {
-            string imageUrl = null;
-            string uri = "https://gigachat.devices.sberbank.ru/api/v1/images/generations";
-
-            using (HttpClientHandler handler = new HttpClientHandler())
-            {
-                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
-
-                using (HttpClient client = new HttpClient(handler))
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
-
-                    request.Headers.Add("Accept", "application/json");
-                    request.Headers.Add("Authorization", $"Bearer {token}");
-
-                    var requestBody = new
-                    {
-                        model = "GigaChat",
-                        prompt = prompt,
-                        n = 1,
-                        size = "1024x1024"
-                    };
-
-                    string jsonBody = JsonConvert.SerializeObject(requestBody);
-                    request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-
-                    HttpResponseMessage response = await client.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string responseContent = await response.Content.ReadAsStringAsync();
-                        var imageResponse = JsonConvert.DeserializeObject<ImageGenerationResponse>(responseContent);
-
-                        if (imageResponse != null && imageResponse.data != null && imageResponse.data.Count > 0)
-                        {
-                            imageUrl = imageResponse.data[0].url;
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Ошибка: {response.StatusCode}");
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"Детали ошибки: {errorContent}");
-                    }
-                }
-            }
-
-            return imageUrl;
-        }
-
-        public static async Task<string> DownloadImage(string token, string imageId, string fileName = null)
-        {
             try
             {
-                if (string.IsNullOrEmpty(fileName))
-                {
-                    fileName = $"{imageId}.jpg";
-                }
-
-                string downloadPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-
-                string uri = $"https://gigachat.devices.sberbank.ru/api/v1/images/{imageId}";
+                string returnToken = null;
+                string uri = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
 
                 using (HttpClientHandler handler = new HttpClientHandler())
                 {
@@ -179,35 +104,262 @@ namespace APIGigaChatImage_Kantuganov
 
                     using (HttpClient client = new HttpClient(handler))
                     {
-                        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
 
-                        Console.WriteLine($"Скачиваю изображение {imageId}...");
+                        request.Headers.Add("Accept", "application/json");
+                        request.Headers.Add("Authorization", $"Bearer {bearer}");
+                        request.Headers.Add("RqUID", rpUID);
 
-                        using (HttpResponseMessage response = await client.GetAsync(uri))
+                        var formData = new List<KeyValuePair<string, string>>
                         {
-                            if (response.IsSuccessStatusCode)
-                            {
-                                using (FileStream fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                                {
-                                    await response.Content.CopyToAsync(fileStream);
-                                }
+                            new KeyValuePair<string, string>("scope", "GIGACHAT_API_PERS")
+                        };
 
-                                Console.WriteLine($"Изображение сохранено в: {downloadPath}");
-                                return downloadPath;
-                            }
-                            else
+                        request.Content = new FormUrlEncodedContent(formData);
+
+                        HttpResponseMessage response = await client.SendAsync(request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string responseContent = await response.Content.ReadAsStringAsync();
+                            var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(responseContent);
+                            returnToken = tokenResponse?.access_token;
+                        }
+                    }
+                }
+
+                return returnToken;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static async Task<string> GenerateImage(string accessToken, string prompt)
+        {
+            try
+            {
+                string uri = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
+
+                using (HttpClientHandler handler = new HttpClientHandler())
+                {
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(120);
+
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
+
+                        request.Headers.Add("Accept", "application/json");
+                        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+                        var requestBody = new
+                        {
+                            model = "GigaChat",
+                            messages = new[]
                             {
-                                Console.WriteLine($"Ошибка при скачивании: {response.StatusCode}");
-                                return null;
+                                new
+                                {
+                                    role = "system",
+                                    content = "Ты - профессиональный художник. Создавай красивые и детализированные изображения в высоком качестве."
+                                },
+                                new
+                                {
+                                    role = "user",
+                                    content = prompt
+                                }
+                            },
+                            function_call = "auto"
+                        };
+
+                        string jsonBody = JsonConvert.SerializeObject(requestBody);
+                        request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                        HttpResponseMessage response = await client.SendAsync(request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string responseContent = await response.Content.ReadAsStringAsync();
+                            var chatResponse = JsonConvert.DeserializeObject<ChatCompletionResponse>(responseContent);
+
+                            if (chatResponse?.choices != null && chatResponse.choices.Count > 0)
+                            {
+                                string content = chatResponse.choices[0]?.message?.content;
+
+                                if (!string.IsNullOrEmpty(content))
+                                {
+                                    var match = Regex.Match(content, @"<img\s+src=""([^""]+)""\s+fuse=""true""\s*/>");
+
+                                    if (match.Success && match.Groups.Count > 1)
+                                    {
+                                        return match.Groups[1].Value;
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Исключение при скачивании изображения: {ex.Message}");
+
                 return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static async Task<string> DownloadImage(string accessToken, string fileId)
+        {
+            try
+            {
+                string uri = $"https://gigachat.devices.sberbank.ru/api/v1/files/{fileId}/content";
+                string fileName = $"gigachat_wallpaper_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
+                string downloadPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+
+                using (HttpClientHandler handler = new HttpClientHandler())
+                {
+                    handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(60);
+
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                        request.Headers.Add("Accept", "application/jpg");
+                        request.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+                        HttpResponseMessage response = await client.SendAsync(request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            byte[] imageBytes = await response.Content.ReadAsByteArrayAsync();
+
+                            if (imageBytes.Length == 0)
+                            {
+                                return null;
+                            }
+
+                            var contentType = response.Content.Headers.ContentType?.MediaType;
+                            string extension = ".jpg";
+
+                            if (contentType != null)
+                            {
+                                if (contentType.ToLower() == "image/png")
+                                {
+                                    extension = ".png";
+                                }
+                                else if (contentType.ToLower() == "image/jpeg" || contentType.ToLower() == "image/jpg")
+                                {
+                                    extension = ".jpg";
+                                }
+                                else if (contentType.ToLower() == "image/bmp")
+                                {
+                                    extension = ".bmp";
+                                }
+                                else if (contentType.ToLower() == "image/webp")
+                                {
+                                    extension = ".webp";
+                                }
+                            }
+
+                            if (!fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                            {
+                                fileName = Path.GetFileNameWithoutExtension(fileName) + extension;
+                                downloadPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+                            }
+
+                            File.WriteAllBytes(downloadPath, imageBytes);
+
+                            if (File.Exists(downloadPath))
+                            {
+                                return downloadPath;
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public class TokenResponse
+        {
+            public string access_token { get; set; }
+            public string expired_at { get; set; }
+        }
+
+        public class ChatCompletionResponse
+        {
+            public List<Choice> choices { get; set; }
+            public long created { get; set; }
+            public string model { get; set; }
+            public string @object { get; set; }
+            public Usage usage { get; set; }
+        }
+
+        public class Choice
+        {
+            public Message message { get; set; }
+            public int index { get; set; }
+            public string finish_reason { get; set; }
+        }
+
+        public class Message
+        {
+            public string content { get; set; }
+            public string role { get; set; }
+        }
+
+        public class Usage
+        {
+            public int prompt_tokens { get; set; }
+            public int completion_tokens { get; set; }
+            public int total_tokens { get; set; }
+        }
+
+        public class Wallpapersetter
+        {
+            private const int SPI_SETDESKWALLPAPER = 0x0014;
+            private const int SPIF_UPDATEINIFILE = 0x01;
+            private const int SPIF_SENDWININICHANGE = 0x02;
+
+            [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+            private static extern int SystemParametersInfo(
+                int uAction,
+                int uParam,
+                string lpvParam,
+                int fuWinIni
+            );
+
+            public static bool SetWallpaper(string imagePath)
+            {
+                try
+                {
+                    if (!File.Exists(imagePath))
+                    {
+                        return false;
+                    }
+
+                    int result = SystemParametersInfo(
+                        SPI_SETDESKWALLPAPER,
+                        0,
+                        imagePath,
+                        SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE
+                    );
+
+                    return result != 0;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
     }
