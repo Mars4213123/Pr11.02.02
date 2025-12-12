@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using APIGigaChatImage_Kantuganov.Models.Response;
+using Newtonsoft.Json;
 
 namespace APIGigaChatImage_Kantuganov
 {
@@ -11,9 +13,25 @@ namespace APIGigaChatImage_Kantuganov
     {
         static string ClientId = "***";
         static string AuthorizationKey = "***";
-        static void Main(string[] args)
+
+        static async Task Main(string[] args)
         {
+            string Token = await GetToken(ClientId, AuthorizationKey);
+
+            // Пример использования
+            string prompt = "Красивый закат над горами";
+            string imageUrl = await GenerateImage(Token, prompt);
+
+            if (imageUrl != null)
+            {
+                Console.WriteLine($"Изображение успешно сгенерировано: {imageUrl}");
+            }
+            else
+            {
+                Console.WriteLine("Ошибка при генерации изображения");
+            }
         }
+
         public static async Task<string> GetToken(string rpUID, string bearer)
         {
             string ReturnToken = null;
@@ -31,9 +49,9 @@ namespace APIGigaChatImage_Kantuganov
                     Request.Headers.Add("Authorization", $"bearer {bearer}");
 
                     var Data = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("scope", "GIGANET_API_PERS")
-            };
+                    {
+                        new KeyValuePair<string, string>("scope", "GIGANET_API_PERS")
+                    };
 
                     Request.Content = new FormUrlEncodedContent(Data);
 
@@ -49,6 +67,57 @@ namespace APIGigaChatImage_Kantuganov
             }
 
             return ReturnToken;
+        }
+
+        public static async Task<string> GenerateImage(string token, string prompt)
+        {
+            string imageUrl = null;
+            string uri = "https://gigachat.devices.sberbank.ru/api/v1/images/generations";
+
+            using (HttpClientHandler handler = new HttpClientHandler())
+            {
+                handler.ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true;
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
+
+                    request.Headers.Add("Accept", "application/json");
+                    request.Headers.Add("Authorization", $"Bearer {token}");
+
+                    var requestBody = new
+                    {
+                        model = "GigaChat",
+                        prompt = prompt,
+                        n = 1,
+                        size = "1024x1024"
+                    };
+
+                    string jsonBody = JsonConvert.SerializeObject(requestBody);
+                    request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseContent = await response.Content.ReadAsStringAsync();
+                        var imageResponse = JsonConvert.DeserializeObject<ImageGenerationResponse>(responseContent);
+
+                        if (imageResponse != null && imageResponse.data != null && imageResponse.data.Count > 0)
+                        {
+                            imageUrl = imageResponse.data[0].url;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Ошибка: {response.StatusCode}");
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine($"Детали ошибки: {errorContent}");
+                    }
+                }
+            }
+
+            return imageUrl;
         }
     }
 }
