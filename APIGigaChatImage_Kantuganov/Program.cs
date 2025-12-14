@@ -13,7 +13,7 @@ namespace APIGigaChatImage_Kantuganov
     public class Program
     {
         static string ClientId = "7879c628-132f-4ec9-b371-309d6472aa56";
-        static string AuthorizationKey = "Nzg3OWM2MjgtMTMyZi00ZWM5LWIzNzEtMzA5ZDY0NzJhYTU2OmI2ZmM2MDdjLWY2MGEtNDhmYi04MDQ2LTY3Y2U0NzNlMDA1NA==";
+        static string AuthorizationKey = "Nzg3OWM2MjgtMTMyZi00ZWM5LWIzNzEtMzA5ZDY0NzJhYTU2OmQyOGViYTZmLTZiNjEtNDA2NC04M2E4LTM4Y2MzMzc4ZDVkMQ==";
 
         static async Task Main(string[] args)
         {
