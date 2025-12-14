@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APIGigaChatImage_Kantuganov", "APIGigaChatImage_Kantuganov\APIGigaChatImage_Kantuganov.csproj", "{54FD9EF4-35B8-4540-A8D1-C0A70B37DC76}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GigaChatImage_Kantuganov", "GigaChatImage_Kantuganov\GigaChatImage_Kantuganov.csproj", "{2AD2336E-0CDB-45AC-9720-AD6DD0F859A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,8 +17,15 @@ Global
 		{54FD9EF4-35B8-4540-A8D1-C0A70B37DC76}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54FD9EF4-35B8-4540-A8D1-C0A70B37DC76}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54FD9EF4-35B8-4540-A8D1-C0A70B37DC76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AD2336E-0CDB-45AC-9720-AD6DD0F859A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2AD2336E-0CDB-45AC-9720-AD6DD0F859A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2AD2336E-0CDB-45AC-9720-AD6DD0F859A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AD2336E-0CDB-45AC-9720-AD6DD0F859A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {10DA1C40-6FCF-4168-903B-F3DD03557257}
 	EndGlobalSection
 EndGlobal

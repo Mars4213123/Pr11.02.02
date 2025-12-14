@@ -1,0 +1,190 @@
+﻿<Window x:Class="GigaChatImage_Kantuganov.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GigaChatImage_Kantuganov"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#2D3250" Padding="20">
+            <StackPanel>
+                <TextBlock Text="Генератор обоев" 
+                         FontSize="24" 
+                         FontWeight="Bold" 
+                         Foreground="White"
+                         HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+
+                <GroupBox Header="Описание изображения" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="Опишите, что вы хотите видеть на обоях:" 
+                                 Margin="5" 
+                                 TextWrapping="Wrap"/>
+                        <TextBox x:Name="PromptTextBox" 
+                               Height="80" 
+                               TextWrapping="Wrap" 
+                               VerticalScrollBarVisibility="Auto"
+                               AcceptsReturn="True"
+                               Text=""/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Параметры генерации" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Стиль:"/>
+                        <ComboBox x:Name="StyleComboBox" 
+                                Grid.Row="0" 
+                                Grid.Column="1"
+                                SelectedIndex="0">
+                            <ComboBoxItem Content="Реализм" Tag="realistic"/>
+                            <ComboBoxItem Content="Живопись" Tag="painting"/>
+                            <ComboBoxItem Content="Аниме" Tag="anime"/>
+                            <ComboBoxItem Content="Киберпанк" Tag="cyberpunk"/>
+                            <ComboBoxItem Content="Фэнтези" Tag="fantasy"/>
+                            <ComboBoxItem Content="Минимализм" Tag="minimalism"/>
+                            <ComboBoxItem Content="Сюрреализм" Tag="surreal"/>
+                            <ComboBoxItem Content="Пиксель-арт" Tag="pixelart"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Цветовая палитра:"/>
+                        <ComboBox x:Name="ColorPaletteComboBox" 
+                                Grid.Row="1" 
+                                Grid.Column="1"
+                                SelectedIndex="0">
+                            <ComboBoxItem Content="Яркие цвета" Tag="bright"/>
+                            <ComboBoxItem Content="Пастельные тона" Tag="pastel"/>
+                            <ComboBoxItem Content="Монохромная" Tag="monochrome"/>
+                            <ComboBoxItem Content="Тёмная тема" Tag="dark"/>
+                            <ComboBoxItem Content="Тёплые тона" Tag="warm"/>
+                            <ComboBoxItem Content="Холодные тона" Tag="cool"/>
+                            <ComboBoxItem Content="Неоновая" Tag="neon"/>
+                            <ComboBoxItem Content="Природная" Tag="natural"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Соотношение сторон:"/>
+                        <ComboBox x:Name="AspectRatioComboBox" 
+                                Grid.Row="2" 
+                                Grid.Column="1"
+                                SelectedIndex="0">
+                            <ComboBoxItem Content="16:9 (Широкоэкранный)" Tag="16:9"/>
+                            <ComboBoxItem Content="16:10 (Widescreen)" Tag="16:10"/>
+                            <ComboBoxItem Content="4:3 (Стандартный)" Tag="4:3"/>
+                            <ComboBoxItem Content="21:9 (Ультраширокий)" Tag="21:9"/>
+                            <ComboBoxItem Content="1:1 (Квадрат)" Tag="1:1"/>
+                            <ComboBoxItem Content="3:2 (Фото)" Tag="3:2"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Качество:"/>
+                        <ComboBox x:Name="QualityComboBox" 
+                                Grid.Row="3" 
+                                Grid.Column="1"
+                                SelectedIndex="0">
+                            <ComboBoxItem Content="Стандартное" Tag="standard"/>
+                            <ComboBoxItem Content="Высокое" Tag="high"/>
+                            <ComboBoxItem Content="HD" Tag="hd"/>
+                        </ComboBox>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Header="Дополнительные параметры" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="AddDetailsCheckBox" 
+                                Content="Добавить детали" 
+                                Margin="5"
+                                IsChecked="True"/>
+                        <CheckBox x:Name="AddLightingCheckBox" 
+                                Content="Специальное освещение" 
+                                Margin="5"
+                                IsChecked="True"/>
+                        <CheckBox x:Name="HighResCheckBox" 
+                                Content="Высокое разрешение" 
+                                Margin="5"
+                                IsChecked="True"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Сгенерированный промпт" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBox x:Name="GeneratedPromptTextBox" 
+                               Height="60" 
+                               TextWrapping="Wrap" 
+                               IsReadOnly="True"
+                               VerticalScrollBarVisibility="Auto"
+                               Background="#F0F0F0"/>
+                        <Button x:Name="CopyPromptButton" 
+                              Content="Копировать промпт" 
+                              Width="150"
+                              HorizontalAlignment="Left"
+                              Margin="5"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <Border BorderBrush="LightGray" BorderThickness="1" CornerRadius="5" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock x:Name="StatusTextBlock" 
+                                 Text="Готов к генерации" 
+                                 Margin="10"
+                                 FontSize="14"/>
+                        <ProgressBar x:Name="ProgressBar" 
+                                   Height="20" 
+                                   Margin="10,0,10,10"
+                                   IsIndeterminate="False"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#F0F0F0" Padding="10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="GenerateButton" 
+                      Content="Сгенерировать обои" 
+                      Width="200"
+                      FontSize="16"
+                      FontWeight="Bold"
+                      Background="#4CAF50"
+                      Foreground="White"
+                      Click="GenerateButton_Click"/>
+
+                
+
+                <Button x:Name="SetWallpaperButton" 
+                      Content="Установить как обои" 
+                      Width="200"
+                      Margin="20,0,0,0"
+                      IsEnabled="False"
+                      Background="#2196F3"
+                      Foreground="Black"
+                      Click="SetWallpaperButton_Click"/>
+
+                <Button x:Name="SaveButton" 
+                      Content="💾 Сохранить" 
+                      Width="150"
+                      Margin="20,0,0,0"
+                      IsEnabled="False"
+                      Click="SaveButton_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
